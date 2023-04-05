@@ -1,0 +1,1861 @@
+{
+	"name": "Dynamic Pipeline IRIS - Topdesk",
+	"properties": {
+		"activities": [
+			{
+				"name": "Stage to HIS",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "CopyData",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[LoadManagement].[ODS_InsertAndUpdate]",
+					"storedProcedureParameters": {
+						"DeltaColumn": {
+							"value": {
+								"value": "@pipeline().parameters.DeltaColumn",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"Execute": {
+							"value": "true",
+							"type": "Boolean"
+						},
+						"Pipeline_ID": {
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"Target": {
+							"value": {
+								"value": "@pipeline().parameters.Target",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"TableLoadType": {
+							"value": {
+								"value": "@pipeline().parameters.TableLoadType",
+								"type": "Expression"
+							},
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Visio DWH",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "EndDate",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Stage to HIS",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[LoadManagement].[UpdateETL_EndDate]",
+					"storedProcedureParameters": {
+						"Target": {
+							"value": {
+								"value": "@pipeline().parameters.Target",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"TableLoadType": {
+							"value": {
+								"value": "@pipeline().parameters.TableLoadType",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"Pipeline_ID": {
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Visio DWH",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Truncate table",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "WLS Start load",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[LoadManagement].[STAGE_TruncateTable]",
+					"storedProcedureParameters": {
+						"Target": {
+							"value": {
+								"value": "@pipeline().parameters.Target",
+								"type": "Expression"
+							},
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Visio DWH",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "WLS Start load",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Set ETL_Date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[Monitoring].[WriteLoadStatus]",
+					"storedProcedureParameters": {
+						"Process": {
+							"value": "load",
+							"type": "String"
+						},
+						"Step": {
+							"value": "Start load",
+							"type": "String"
+						},
+						"Status": {
+							"value": "RUNNING",
+							"type": "String"
+						},
+						"Target": {
+							"value": {
+								"value": "@CONCAT('STAGE.',pipeline().parameters.Target)",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"WorkflowID": {
+							"value": {
+								"value": "@pipeline().parameters.Workflow",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineID": {
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": {
+								"value": "@pipeline().Pipeline",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"Started_by": {
+							"value": {
+								"value": "@pipeline().TriggerName",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"Source_system": {
+							"value": {
+								"value": "@pipeline().parameters.InputSource",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"Table": {
+							"value": {
+								"value": "@pipeline().parameters.InputTable",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"Schema": {
+							"value": {
+								"value": "@pipeline().parameters.InputSchema",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"LoadType": {
+							"value": {
+								"value": "@pipeline().parameters.TableLoadType",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"ETL_Date": {
+							"value": {
+								"value": "@variables('ETL_Date')",
+								"type": "Expression"
+							},
+							"type": "Datetime"
+						},
+						"Rows": {
+							"value": null,
+							"type": "Int64"
+						},
+						"LatestRecord": {
+							"value": {
+								"value": "@utcnow()",
+								"type": "Expression"
+							},
+							"type": "Datetime"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Visio DWH",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Set ETL_Date",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "ETL_Date",
+					"value": {
+						"value": "@utcnow()",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "WLS Start truncate table",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "WLS Start load",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[Monitoring].[WriteLoadStatus]",
+					"storedProcedureParameters": {
+						"Process": {
+							"value": "load",
+							"type": "String"
+						},
+						"Step": {
+							"value": "Start truncate table",
+							"type": "String"
+						},
+						"Status": {
+							"value": "RUNNING",
+							"type": "String"
+						},
+						"Target": {
+							"value": {
+								"value": "@CONCAT('STAGE.',pipeline().parameters.Target)",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"WorkflowID": {
+							"value": null,
+							"type": "String"
+						},
+						"PipelineID": {
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": null,
+							"type": "String"
+						},
+						"Started_by": {
+							"value": null,
+							"type": "String"
+						},
+						"Source_system": {
+							"value": null,
+							"type": "String"
+						},
+						"Table": {
+							"value": null,
+							"type": "String"
+						},
+						"Schema": {
+							"value": null,
+							"type": "String"
+						},
+						"LoadType": {
+							"value": null,
+							"type": "String"
+						},
+						"LatestRecord": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"ETL_Date": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"Rows": {
+							"value": null,
+							"type": "Int64"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Visio DWH",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "WLS Start lookup mapping",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Truncate table",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[Monitoring].[WriteLoadStatus]",
+					"storedProcedureParameters": {
+						"Process": {
+							"value": "load",
+							"type": "String"
+						},
+						"Step": {
+							"value": "lookup mapping",
+							"type": "String"
+						},
+						"Status": {
+							"value": "RUNNING",
+							"type": "String"
+						},
+						"Target": {
+							"value": {
+								"value": "@CONCAT('STAGE.',pipeline().parameters.Target)",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"WorkflowID": {
+							"value": null,
+							"type": "String"
+						},
+						"PipelineID": {
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": null,
+							"type": "String"
+						},
+						"Started_by": {
+							"value": null,
+							"type": "String"
+						},
+						"Source_system": {
+							"value": null,
+							"type": "String"
+						},
+						"Table": {
+							"value": null,
+							"type": "String"
+						},
+						"Schema": {
+							"value": null,
+							"type": "String"
+						},
+						"LoadType": {
+							"value": null,
+							"type": "String"
+						},
+						"LatestRecord": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"ETL_Date": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"Rows": {
+							"value": null,
+							"type": "Int64"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Visio DWH",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "WLS Start upsert HIS",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "CopyData",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[Monitoring].[WriteLoadStatus]",
+					"storedProcedureParameters": {
+						"Process": {
+							"value": "load",
+							"type": "String"
+						},
+						"Step": {
+							"value": "Start upsert HIS",
+							"type": "String"
+						},
+						"Status": {
+							"value": "RUNNING",
+							"type": "String"
+						},
+						"Target": {
+							"value": {
+								"value": "@CONCAT('STAGE.',pipeline().parameters.Target)",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"WorkflowID": {
+							"value": null,
+							"type": "String"
+						},
+						"PipelineID": {
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": null,
+							"type": "String"
+						},
+						"Started_by": {
+							"value": null,
+							"type": "String"
+						},
+						"Source_system": {
+							"value": null,
+							"type": "String"
+						},
+						"Table": {
+							"value": null,
+							"type": "String"
+						},
+						"Schema": {
+							"value": null,
+							"type": "String"
+						},
+						"LoadType": {
+							"value": null,
+							"type": "String"
+						},
+						"LatestRecord": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"ETL_Date": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"Rows": {
+							"value": null,
+							"type": "Int64"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Visio DWH",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "WLS Start update ETL_EndDate",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Stage to HIS",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[Monitoring].[WriteLoadStatus]",
+					"storedProcedureParameters": {
+						"Process": {
+							"value": "load",
+							"type": "String"
+						},
+						"Step": {
+							"value": "Start update ETL_EndDate",
+							"type": "String"
+						},
+						"Status": {
+							"value": "RUNNING",
+							"type": "String"
+						},
+						"Target": {
+							"value": {
+								"value": "@CONCAT('STAGE.',pipeline().parameters.Target)",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"WorkflowID": {
+							"value": null,
+							"type": "String"
+						},
+						"PipelineID": {
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": null,
+							"type": "String"
+						},
+						"Started_by": {
+							"value": null,
+							"type": "String"
+						},
+						"Source_system": {
+							"value": null,
+							"type": "String"
+						},
+						"Table": {
+							"value": null,
+							"type": "String"
+						},
+						"Schema": {
+							"value": null,
+							"type": "String"
+						},
+						"LoadType": {
+							"value": null,
+							"type": "String"
+						},
+						"LatestRecord": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"ETL_Date": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"Rows": {
+							"value": null,
+							"type": "Int64"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Visio DWH",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "WLS truncate table failed",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Truncate table",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[Monitoring].[WriteLoadStatus]",
+					"storedProcedureParameters": {
+						"Process": {
+							"value": "load",
+							"type": "String"
+						},
+						"Step": {
+							"value": "Truncate table",
+							"type": "String"
+						},
+						"Status": {
+							"value": "FAILED",
+							"type": "String"
+						},
+						"Target": {
+							"value": {
+								"value": "@CONCAT('STAGE.',pipeline().parameters.Target)",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"WorkflowID": {
+							"value": null,
+							"type": "String"
+						},
+						"PipelineID": {
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": null,
+							"type": "String"
+						},
+						"Started_by": {
+							"value": null,
+							"type": "String"
+						},
+						"Source_system": {
+							"value": null,
+							"type": "String"
+						},
+						"Table": {
+							"value": null,
+							"type": "String"
+						},
+						"Schema": {
+							"value": null,
+							"type": "String"
+						},
+						"LoadType": {
+							"value": null,
+							"type": "String"
+						},
+						"LatestRecord": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"ETL_Date": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"Rows": {
+							"value": null,
+							"type": "Int64"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Visio DWH",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "WLS load data failed",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "CopyData",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[Monitoring].[WriteLoadStatus]",
+					"storedProcedureParameters": {
+						"Process": {
+							"value": "load",
+							"type": "String"
+						},
+						"Step": {
+							"value": "Load data",
+							"type": "String"
+						},
+						"Status": {
+							"value": "FAILED",
+							"type": "String"
+						},
+						"Target": {
+							"value": {
+								"value": "@CONCAT('STAGE.',pipeline().parameters.Target)",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"WorkflowID": {
+							"value": null,
+							"type": "String"
+						},
+						"PipelineID": {
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": null,
+							"type": "String"
+						},
+						"Started_by": {
+							"value": null,
+							"type": "String"
+						},
+						"Source_system": {
+							"value": null,
+							"type": "String"
+						},
+						"Table": {
+							"value": null,
+							"type": "String"
+						},
+						"Schema": {
+							"value": null,
+							"type": "String"
+						},
+						"LoadType": {
+							"value": null,
+							"type": "String"
+						},
+						"LatestRecord": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"ETL_Date": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"Rows": {
+							"value": null,
+							"type": "Int64"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Visio DWH",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "WLS upsert HIS failed",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Stage to HIS",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[Monitoring].[WriteLoadStatus]",
+					"storedProcedureParameters": {
+						"Process": {
+							"value": "load",
+							"type": "String"
+						},
+						"Step": {
+							"value": "Upsert HIS",
+							"type": "String"
+						},
+						"Status": {
+							"value": "FAILED",
+							"type": "String"
+						},
+						"Target": {
+							"value": {
+								"value": "@CONCAT('STAGE.',pipeline().parameters.Target)",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"WorkflowID": {
+							"value": null,
+							"type": "String"
+						},
+						"PipelineID": {
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": null,
+							"type": "String"
+						},
+						"Started_by": {
+							"value": null,
+							"type": "String"
+						},
+						"Source_system": {
+							"value": null,
+							"type": "String"
+						},
+						"Table": {
+							"value": null,
+							"type": "String"
+						},
+						"Schema": {
+							"value": null,
+							"type": "String"
+						},
+						"LoadType": {
+							"value": null,
+							"type": "String"
+						},
+						"LatestRecord": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"ETL_Date": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"Rows": {
+							"value": null,
+							"type": "Int64"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Visio DWH",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "WLS Update ETL_EndDate failed",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "EndDate",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[Monitoring].[WriteLoadStatus]",
+					"storedProcedureParameters": {
+						"Process": {
+							"value": "load",
+							"type": "String"
+						},
+						"Step": {
+							"value": "Update ETL_EndDate",
+							"type": "String"
+						},
+						"Status": {
+							"value": "FAILED",
+							"type": "String"
+						},
+						"Target": {
+							"value": {
+								"value": "@CONCAT('STAGE.',pipeline().parameters.Target)",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"WorkflowID": {
+							"value": null,
+							"type": "String"
+						},
+						"PipelineID": {
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": null,
+							"type": "String"
+						},
+						"Started_by": {
+							"value": null,
+							"type": "String"
+						},
+						"Source_system": {
+							"value": null,
+							"type": "String"
+						},
+						"Table": {
+							"value": null,
+							"type": "String"
+						},
+						"Schema": {
+							"value": null,
+							"type": "String"
+						},
+						"LoadType": {
+							"value": null,
+							"type": "String"
+						},
+						"LatestRecord": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"ETL_Date": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"Rows": {
+							"value": null,
+							"type": "Int64"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Visio DWH",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Lookup mapping",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Truncate table",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderStoredProcedureName": "[LoadManagement].[getColumnMapping]",
+						"storedProcedureParameters": {
+							"schemaname": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.InputSchema",
+									"type": "Expression"
+								}
+							},
+							"tablename": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.InputTable",
+									"type": "Expression"
+								}
+							},
+							"Source": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.InputSource",
+									"type": "Expression"
+								}
+							}
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DynamicTablesDWH",
+						"type": "DatasetReference",
+						"parameters": {
+							"SchemaName": "N/A",
+							"TableName": "N/A"
+						}
+					},
+					"firstRowOnly": true
+				}
+			},
+			{
+				"name": "WLS Start load data",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Lookup mapping",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[Monitoring].[WriteLoadStatus]",
+					"storedProcedureParameters": {
+						"Process": {
+							"value": "load",
+							"type": "String"
+						},
+						"Step": {
+							"value": "Start load data",
+							"type": "String"
+						},
+						"Status": {
+							"value": "RUNNING",
+							"type": "String"
+						},
+						"Target": {
+							"value": {
+								"value": "@CONCAT('STAGE.',pipeline().parameters.Target)",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"WorkflowID": {
+							"value": null,
+							"type": "String"
+						},
+						"PipelineID": {
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": null,
+							"type": "String"
+						},
+						"Started_by": {
+							"value": null,
+							"type": "String"
+						},
+						"Source_system": {
+							"value": null,
+							"type": "String"
+						},
+						"Table": {
+							"value": null,
+							"type": "String"
+						},
+						"Schema": {
+							"value": null,
+							"type": "String"
+						},
+						"LoadType": {
+							"value": null,
+							"type": "String"
+						},
+						"LatestRecord": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"ETL_Date": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"Rows": {
+							"value": null,
+							"type": "Int64"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Visio DWH",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "WLS lookup mapping failed",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Lookup mapping",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[Monitoring].[WriteLoadStatus]",
+					"storedProcedureParameters": {
+						"Process": {
+							"value": "load",
+							"type": "String"
+						},
+						"Step": {
+							"value": "Truncate table",
+							"type": "String"
+						},
+						"Status": {
+							"value": "FAILED",
+							"type": "String"
+						},
+						"Target": {
+							"value": {
+								"value": "@CONCAT('STAGE.',pipeline().parameters.Target)",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"WorkflowID": {
+							"value": null,
+							"type": "String"
+						},
+						"PipelineID": {
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": null,
+							"type": "String"
+						},
+						"Started_by": {
+							"value": null,
+							"type": "String"
+						},
+						"Source_system": {
+							"value": null,
+							"type": "String"
+						},
+						"Table": {
+							"value": null,
+							"type": "String"
+						},
+						"Schema": {
+							"value": null,
+							"type": "String"
+						},
+						"LoadType": {
+							"value": null,
+							"type": "String"
+						},
+						"LatestRecord": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"ETL_Date": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"Rows": {
+							"value": null,
+							"type": "Int64"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Visio DWH",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "WLS Update Copied Rows",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "CopyData",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[Monitoring].[WriteLoadStatus]",
+					"storedProcedureParameters": {
+						"Process": {
+							"value": "load",
+							"type": "String"
+						},
+						"Step": {
+							"value": "Copied rows",
+							"type": "String"
+						},
+						"Status": {
+							"value": "RUNNING",
+							"type": "String"
+						},
+						"Target": {
+							"value": {
+								"value": "@CONCAT('STAGE.',pipeline().parameters.Target)",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"WorkflowID": {
+							"value": null,
+							"type": "String"
+						},
+						"PipelineID": {
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": null,
+							"type": "String"
+						},
+						"Started_by": {
+							"value": null,
+							"type": "String"
+						},
+						"Source_system": {
+							"value": null,
+							"type": "String"
+						},
+						"Table": {
+							"value": null,
+							"type": "String"
+						},
+						"Schema": {
+							"value": null,
+							"type": "String"
+						},
+						"LoadType": {
+							"value": null,
+							"type": "String"
+						},
+						"LatestRecord": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"ETL_Date": {
+							"value": null,
+							"type": "Datetime"
+						},
+						"Rows": {
+							"value": {
+								"value": "@activity('Copy Data').output.rowsCopied",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Visio DWH",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Truncate STAGE if needed",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "EndDate",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "WLS Start update ETL_EndDate",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(pipeline().parameters.keepStage,0)",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "WLS End load 2",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[Monitoring].[WriteLoadStatus]",
+								"storedProcedureParameters": {
+									"Process": {
+										"value": "load",
+										"type": "String"
+									},
+									"Step": {
+										"value": "End load",
+										"type": "String"
+									},
+									"Status": {
+										"value": "SUCCEEDED",
+										"type": "String"
+									},
+									"Target": {
+										"value": {
+											"value": "@CONCAT('STAGE.',pipeline().parameters.Target)",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"WorkflowID": {
+										"value": null,
+										"type": "String"
+									},
+									"PipelineID": {
+										"value": {
+											"value": "@pipeline().RunId",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineName": {
+										"value": null,
+										"type": "String"
+									},
+									"Started_by": {
+										"value": null,
+										"type": "String"
+									},
+									"Source_system": {
+										"value": null,
+										"type": "String"
+									},
+									"Table": {
+										"value": null,
+										"type": "String"
+									},
+									"Schema": {
+										"value": null,
+										"type": "String"
+									},
+									"LoadType": {
+										"value": null,
+										"type": "String"
+									},
+									"LatestRecord": {
+										"value": null,
+										"type": "Datetime"
+									},
+									"ETL_Date": {
+										"value": null,
+										"type": "Datetime"
+									},
+									"Rows": {
+										"value": null,
+										"type": "Int64"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "Visio DWH",
+								"type": "LinkedServiceReference"
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "Truncate Stage table",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[LoadManagement].[STAGE_TruncateTable]",
+								"storedProcedureParameters": {
+									"Target": {
+										"value": {
+											"value": "@pipeline().parameters.Target",
+											"type": "Expression"
+										},
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "Visio DWH",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "WLS End load 1",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "Truncate Stage table",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[Monitoring].[WriteLoadStatus]",
+								"storedProcedureParameters": {
+									"Process": {
+										"value": "load",
+										"type": "String"
+									},
+									"Step": {
+										"value": "End load",
+										"type": "String"
+									},
+									"Status": {
+										"value": "SUCCEEDED",
+										"type": "String"
+									},
+									"Target": {
+										"value": {
+											"value": "@CONCAT('STAGE.',pipeline().parameters.Target)",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"WorkflowID": {
+										"value": null,
+										"type": "String"
+									},
+									"PipelineID": {
+										"value": {
+											"value": "@pipeline().RunId",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineName": {
+										"value": null,
+										"type": "String"
+									},
+									"Started_by": {
+										"value": null,
+										"type": "String"
+									},
+									"Source_system": {
+										"value": null,
+										"type": "String"
+									},
+									"Table": {
+										"value": null,
+										"type": "String"
+									},
+									"Schema": {
+										"value": null,
+										"type": "String"
+									},
+									"LoadType": {
+										"value": null,
+										"type": "String"
+									},
+									"LatestRecord": {
+										"value": null,
+										"type": "Datetime"
+									},
+									"ETL_Date": {
+										"value": null,
+										"type": "Datetime"
+									},
+									"Rows": {
+										"value": null,
+										"type": "Int64"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "Visio DWH",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "CopyData",
+				"type": "Until",
+				"dependsOn": [
+					{
+						"activity": "Lookup mapping",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@or(equals(variables('RowsCopied'),'0' ),less(int(variables('RowsCopied')),int(variables('PackageSize'))))",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Copy Data",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "ODataSource",
+									"additionalColumns": [
+										{
+											"name": "ETL_Date",
+											"value": {
+												"value": "@variables('ETL_Date')",
+												"type": "Expression"
+											}
+										}
+									],
+									"query": {
+										"value": "@concat(pipeline().parameters.DeltaScript,'$skip=',variables('RowsDone'),'&$top=',variables('PackageSize'))",
+										"type": "Expression"
+									},
+									"httpRequestTimeout": "02:00:00"
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"writeBehavior": "insert",
+									"sqlWriterUseTableLock": false,
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"parallelCopies": 5,
+								"translator": {
+									"value": "@json(activity('Lookup mapping').output.firstRow.FieldMapping)",
+									"type": "Expression"
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "TOPDESK_MAIN",
+									"type": "DatasetReference",
+									"parameters": {
+										"connector": {
+											"value": "@pipeline().parameters.InputTable",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DynamicTablesDWH",
+									"type": "DatasetReference",
+									"parameters": {
+										"SchemaName": "STAGE",
+										"TableName": {
+											"value": "@pipeline().parameters.Target",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "Set Rows Copied",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "Copy Data",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "RowsCopied",
+								"value": {
+									"value": "@string(activity('Copy Data').output.rowsCopied)",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "Add to Rows Done",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "Set tmpCalc",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "RowsDone",
+								"value": {
+									"value": "@string(add(int(variables('RowsCopied')),int(variables('tmpCalc'))))",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "Set tmpCalc",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "Set Rows Copied",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "tmpCalc",
+								"value": {
+									"value": "@variables('RowsDone')",
+									"type": "Expression"
+								}
+							}
+						}
+					],
+					"timeout": "7.00:00:00"
+				}
+			}
+		],
+		"parameters": {
+			"InputTable": {
+				"type": "string",
+				"defaultValue": "CUSTTABLE"
+			},
+			"InputSchema": {
+				"type": "string",
+				"defaultValue": "DBO"
+			},
+			"InputSource": {
+				"type": "string",
+				"defaultValue": "AX"
+			},
+			"TableLoadType": {
+				"type": "string",
+				"defaultValue": "DATE"
+			},
+			"Workflow": {
+				"type": "string",
+				"defaultValue": "1"
+			},
+			"Trigger": {
+				"type": "string"
+			},
+			"DeltaScript": {
+				"type": "string",
+				"defaultValue": "SELECT * FROM DBO.CUSTTABLE WHERE CAST(MODIFIEDDATETIME AS DATE) = DATEADD(YEAR,-3,CAST(CURRENT_TIMESTAMP AS DATE))"
+			},
+			"DeltaColumn": {
+				"type": "string"
+			},
+			"Target": {
+				"type": "string",
+				"defaultValue": "AX_DBO_CUSTTABLE"
+			},
+			"keepStage": {
+				"type": "int",
+				"defaultValue": 0
+			}
+		},
+		"variables": {
+			"ETL_Date": {
+				"type": "String"
+			},
+			"varFieldMapping": {
+				"type": "String",
+				"defaultValue": "{\"type\": \"TabularTranslator\", \"mappings\": [{\"source\":{\"path\":\"['Werkgever']\"},\"sink\":{\"name\":\"Werkgever\"}},{\"source\":{\"path\":\"['Naam_werkgever']\"},\"sink\":{\"name\":\"Naam_werkgever\"}},{\"source\":{\"path\":\"['Functie']\"},\"sink\":{\"name\":\"Functie\"}},{\"source\":{\"path\":\"['Omschrijving']\"},\"sink\":{\"name\":\"Omschrijving\"}},{\"source\":{\"path\":\"['TypeFunctie']\"},\"sink\":{\"name\":\"TypeFunctie\"}},{\"source\":{\"path\":\"$['ETL_Date']\"},\"sink\":{\"name\":\"ETL_Date\"}}],\"collectionReference\": \"$['rows']\"}"
+			},
+			"RowsCopied": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"RowsDone": {
+				"type": "String",
+				"defaultValue": "0"
+			},
+			"tmpCalc": {
+				"type": "String",
+				"defaultValue": "0"
+			},
+			"PackageSize": {
+				"type": "String",
+				"defaultValue": "25000"
+			}
+		},
+		"folder": {
+			"name": "PW - Iris/Sources/Topdesk"
+		},
+		"annotations": [
+			"@CONCAT('STAGE.',pipeline().parameters.InputSource,'_',pipeline().parameters.InputSchema,'_',pipeline().parameters.InputTable)"
+		],
+		"lastPublishTime": "2021-11-03T14:03:37Z"
+	}
+}
